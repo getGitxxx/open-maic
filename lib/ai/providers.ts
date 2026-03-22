@@ -837,6 +837,86 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
       },
     ],
   },
+
+  bailian: {
+    id: 'bailian',
+    name: '阿里云百炼',
+    type: 'openai',
+    defaultBaseUrl: 'https://coding.dashscope.aliyuncs.com/v1',
+    requiresApiKey: true,
+    icon: '/logos/qwen.svg', // 使用 Qwen logo
+    models: [
+      // Qwen Series - 视觉理解能力
+      {
+        id: 'qwen3.5-plus',
+        name: 'Qwen3.5 Plus',
+        contextWindow: 128000,
+        outputWindow: 8192,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'qwen3-max-2026-01-23',
+        name: 'Qwen3 Max',
+        contextWindow: 256000,
+        outputWindow: 16384,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+          thinking: {
+            toggleable: true,
+            budgetAdjustable: false,
+            defaultEnabled: false,
+          },
+        },
+      },
+      {
+        id: 'qwen3-coder-next',
+        name: 'Qwen3 Coder Next',
+        contextWindow: 128000,
+        outputWindow: 16384,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+      {
+        id: 'qwen3-coder-plus',
+        name: 'Qwen3 Coder Plus',
+        contextWindow: 128000,
+        outputWindow: 8192,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+      // GLM Series
+      {
+        id: 'glm-5',
+        name: 'GLM-5',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+      {
+        id: 'glm-4.7',
+        name: 'GLM-4.7',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+      // Kimi Series - 视觉理解能力
+      {
+        id: 'kimi-k2.5',
+        name: 'Kimi K2.5',
+        contextWindow: 256000,
+        outputWindow: 8192,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      // MiniMax Series
+      {
+        id: 'MiniMax-M2.5',
+        name: 'MiniMax M2.5',
+        contextWindow: 204800,
+        outputWindow: 8192,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+    ],
+  },
 };
 
 /**

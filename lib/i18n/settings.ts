@@ -87,6 +87,8 @@ export const settingsZhCN = {
       minimax: 'MiniMax',
       glm: 'GLM',
       siliconflow: '硅基流动',
+      doubao: '豆包',
+      bailian: '阿里云百炼',
     },
     providerTypes: {
       openai: 'OpenAI 协议',
@@ -670,6 +672,8 @@ export const settingsEnUS = {
       minimax: 'MiniMax',
       glm: 'GLM',
       siliconflow: 'SiliconFlow',
+      doubao: 'Doubao',
+      bailian: 'Alibaba Cloud Bailian',
     },
     providerTypes: {
       openai: 'OpenAI Protocol',
