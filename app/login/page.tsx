@@ -1,7 +1,6 @@
 "use client"
 
-import { Suspense } from "react"
-import { useState } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,15 +14,85 @@ function LoginForm() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [captchaCode, setCaptchaCode] = useState("")
+  const [captchaId, setCaptchaId] = useState("")
+  const [captchaSvg, setCaptchaSvg] = useState("")
   const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showActivationResend, setShowActivationResend] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState("")
+
+  // 从 URL 获取消息
+  useEffect(() => {
+    const activated = searchParams.get("activated")
+    const errorMsg = searchParams.get("error")
+    const msg = searchParams.get("message")
+
+    if (activated === "true") {
+      setMessage("账号激活成功！请登录")
+    }
+    if (msg === "already_activated") {
+      setMessage("该账号已激活，请直接登录")
+    }
+    if (errorMsg === "missing_token") {
+      setError("激活链接无效")
+    }
+    if (errorMsg === "activation_failed") {
+      setError("激活失败，请重试")
+    }
+  }, [searchParams])
+
+  // 获取验证码
+  const fetchCaptcha = async () => {
+    try {
+      const response = await fetch("/api/auth/captcha")
+      const data = await response.json()
+      setCaptchaId(data.captchaId)
+      setCaptchaSvg(data.svg)
+      setCaptchaCode("")
+    } catch {
+      console.error("获取验证码失败")
+    }
+  }
+
+  // 初始化验证码
+  useEffect(() => {
+    fetchCaptcha()
+  }, [])
 
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+    setMessage("")
+    setShowActivationResend(false)
+
+    // 验证验证码
+    if (!captchaCode) {
+      setError("请输入验证码")
+      setIsLoading(false)
+      return
+    }
 
     try {
+      // 先验证验证码
+      const captchaResponse = await fetch("/api/auth/captcha/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ captchaId, captchaCode }),
+      })
+
+      const captchaData = await captchaResponse.json()
+
+      if (!captchaResponse.ok) {
+        setError(captchaData.error || "验证码错误")
+        fetchCaptcha()
+        setIsLoading(false)
+        return
+      }
+
+      // 登录
       const result = await signIn("credentials", {
         email,
         password,
@@ -32,13 +101,47 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        setError("登录失败，请检查邮箱和密码")
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          setError("请先激活您的账号")
+          setShowActivationResend(true)
+          setUnverifiedEmail(email)
+        } else {
+          setError("登录失败，请检查邮箱和密码")
+        }
+        fetchCaptcha()
       } else {
         router.push(callbackUrl)
         router.refresh()
       }
     } catch {
       setError("登录出错，请稍后重试")
+      fetchCaptcha()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResendActivation = async () => {
+    if (!unverifiedEmail) return
+    
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/auth/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setMessage("激活邮件已发送，请查收")
+        setShowActivationResend(false)
+      } else {
+        setError(data.error || "发送失败")
+      }
+    } catch {
+      setError("发送失败，请稍后重试")
     } finally {
       setIsLoading(false)
     }
@@ -125,9 +228,51 @@ function LoginForm() {
               className="h-12"
             />
           </div>
+          
+          {/* 验证码 */}
+          <div className="flex gap-3 items-center">
+            <Input
+              type="text"
+              placeholder="验证码"
+              value={captchaCode}
+              onChange={(e) => setCaptchaCode(e.target.value)}
+              required
+              className="h-12 flex-1"
+              maxLength={4}
+            />
+            <button
+              type="button"
+              onClick={fetchCaptcha}
+              className="flex-shrink-0 rounded border border-gray-300 overflow-hidden hover:opacity-80 transition-opacity"
+              title="点击刷新验证码"
+            >
+              {captchaSvg && (
+                <div 
+                  dangerouslySetInnerHTML={{ __html: captchaSvg }}
+                  className="w-[120px] h-[40px]"
+                />
+              )}
+            </button>
+          </div>
+
+          {message && (
+            <p className="text-green-600 text-sm text-center">{message}</p>
+          )}
 
           {error && (
             <p className="text-red-500 text-sm text-center">{error}</p>
+          )}
+
+          {showActivationResend && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleResendActivation}
+              disabled={isLoading}
+            >
+              重新发送激活邮件
+            </Button>
           )}
 
           <Button

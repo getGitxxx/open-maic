@@ -35,6 +35,12 @@ const handler = NextAuth({
           return null
         }
 
+        // 检查邮箱是否已激活
+        if (!user.emailVerified) {
+          // 返回特殊错误，前端可据此提示用户
+          throw new Error("EMAIL_NOT_VERIFIED")
+        }
+
         // 验证密码
         const isPasswordValid = await compare(credentials.password, user.passwordHash)
 

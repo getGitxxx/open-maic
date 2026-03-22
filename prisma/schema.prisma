@@ -22,8 +22,9 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // 关联
-  classrooms    Classroom[]
-  resetTokens   PasswordResetToken[]
+  classrooms         Classroom[]
+  resetTokens        PasswordResetToken[]
+  activationTokens   EmailActivationToken[]
 
   @@map("users")
 }
@@ -38,6 +39,18 @@ model PasswordResetToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("password_reset_tokens")
+}
+
+// 邮箱激活令牌表
+model EmailActivationToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("email_activation_tokens")
 }
 
 // 课堂表

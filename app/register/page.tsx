@@ -18,6 +18,12 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  
+  // 注册成功状态
+  const [registered, setRegistered] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState("")
+  const [resending, setResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +57,14 @@ function RegisterForm() {
         return
       }
 
-      // 注册成功，自动登录
+      // 检查是否需要激活
+      if (data.requiresActivation) {
+        setRegisteredEmail(data.email)
+        setRegistered(true)
+        return
+      }
+
+      // 如果不需要激活（不应该发生），直接登录
       const result = await signIn("credentials", {
         email,
         password,
@@ -73,9 +86,86 @@ function RegisterForm() {
     }
   }
 
+  const handleResendActivation = async () => {
+    if (!registeredEmail) return
+    
+    setResending(true)
+    setResendSuccess(false)
+    
+    try {
+      const response = await fetch("/api/auth/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: registeredEmail }),
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setResendSuccess(true)
+      } else {
+        setError(data.error || "发送失败")
+      }
+    } catch {
+      setError("发送失败，请稍后重试")
+    } finally {
+      setResending(false)
+    }
+  }
+
   const handleOAuthLogin = async (provider: "github" | "google") => {
     setIsLoading(true)
     await signIn(provider, { callbackUrl })
+  }
+
+  // 注册成功，显示激活提示
+  if (registered) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            注册成功！
+          </h1>
+          
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            我们已向 <span className="font-medium text-gray-900 dark:text-white">{registeredEmail}</span> 发送了激活邮件
+          </p>
+          
+          <p className="text-sm text-gray-500 mb-6">
+            请点击邮件中的激活链接激活您的账号。如果没有收到邮件，请检查垃圾邮件文件夹。
+          </p>
+          
+          {resendSuccess && (
+            <p className="text-green-600 text-sm mb-4">
+              ✓ 激活邮件已重新发送
+            </p>
+          )}
+          
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleResendActivation}
+              disabled={resending}
+            >
+              {resending ? "发送中..." : "重新发送激活邮件"}
+            </Button>
+            
+            <Link href="/login" className="block">
+              <Button className="w-full">
+                前往登录
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

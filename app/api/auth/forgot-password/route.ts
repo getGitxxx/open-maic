@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { generatePasswordResetToken } from "@/lib/auth-utils"
+import { sendPasswordResetEmail } from "@/lib/email"
 
 // 请求验证
 const forgotPasswordSchema = z.object({
@@ -33,20 +34,21 @@ export async function POST(request: Request) {
       })
     }
 
-    // TODO: 发送邮件
-    // 在生产环境中，这里应该发送邮件
-    // 目前返回令牌用于测试（生产环境应移除）
-    console.log("Password reset token:", result.token)
-    console.log("Reset URL:", `${process.env.NEXTAUTH_URL}/reset-password?token=${result.token}`)
+    // 发送邮件
+    const emailResult = await sendPasswordResetEmail(
+      result.user.email,
+      result.token,
+      result.user.name ?? undefined
+    )
+
+    if (!emailResult.success) {
+      console.error("发送密码重置邮件失败:", emailResult.error)
+      // 不暴露邮件发送失败，避免信息泄露
+    }
 
     return NextResponse.json({
       success: true,
       message: "如果该邮箱已注册，您将收到密码重置邮件",
-      // 开发环境返回 token，生产环境应移除
-      ...(process.env.NODE_ENV === "development" && {
-        devToken: result.token,
-        devResetUrl: `${process.env.NEXTAUTH_URL}/reset-password?token=${result.token}`,
-      }),
     })
   } catch (error) {
     console.error("忘记密码错误:", error)
