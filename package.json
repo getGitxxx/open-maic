@@ -7,8 +7,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "postinstall": "prisma generate && cd packages/mathml2omml && npm run build && cd ../pptxgenjs && npm run build",
-    "vercel-build": "prisma migrate deploy && next build",
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
