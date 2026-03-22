@@ -47,15 +47,52 @@ model EmailActivationToken {
 }
 
 model Classroom {
-  id          String   @id
-  userId      String?  @map("user_id")
-  title       String?
-  requirement String?  @map("requirement")
-  status      String   @default("completed")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  user        User?    @relation(fields: [userId], references: [id])
+  id           String        @id
+  userId       String?       @map("user_id")
+  title        String?
+  requirement  String?       @map("requirement")
+  status       String        @default("completed")
+  stageData    Json?         @map("stage_data")
+  thumbnailUrl String?       @map("thumbnail_url")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  user         User?         @relation(fields: [userId], references: [id])
+  scenes       Scene[]
+  mediaFiles   MediaFile[]
 
   @@index([userId])
   @@map("classrooms")
+}
+
+model Scene {
+  id          String   @id
+  classroomId String   @map("classroom_id")
+  order       Int
+  type        String?
+  title       String?
+  content     Json
+  actions     Json?
+  whiteboard  Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  @@index([classroomId])
+  @@map("scenes")
+}
+
+model MediaFile {
+  id          String   @id
+  classroomId String   @map("classroom_id")
+  sceneId     String?  @map("scene_id")
+  type        String   // 'audio' | 'image' | 'video'
+  blobUrl     String   @map("blob_url")
+  mimeType    String?  @map("mime_type")
+  size        Int?
+  prompt      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  @@index([classroomId])
+  @@map("media_files")
 }
