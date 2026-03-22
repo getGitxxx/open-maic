@@ -130,6 +130,9 @@ export async function generateTTS(
     case 'qwen-tts':
       return await generateQwenTTS(config, text);
 
+    case 'edge-tts':
+      return await generateEdgeTTS(config, text);
+
     case 'browser-native-tts':
       throw new Error(
         'Browser Native TTS must be handled client-side using Web Speech API. This provider cannot be used on the server.',
@@ -313,6 +316,61 @@ async function generateQwenTTS(config: TTSModelConfig, text: string): Promise<TT
   return {
     audio: new Uint8Array(arrayBuffer),
     format: 'wav', // Qwen3 TTS returns WAV format
+  };
+}
+
+/**
+ * Edge TTS implementation (local Edge-TTS API server)
+ * 
+ * Requires a local Edge TTS API server running on http://localhost:8001
+ * See: ~/dev/edge-tts-api/ for the server implementation
+ */
+async function generateEdgeTTS(config: TTSModelConfig, text: string): Promise<TTSGenerationResult> {
+  const provider = TTS_PROVIDERS['edge-tts'];
+  const baseUrl = config.baseUrl || provider.defaultBaseUrl || 'http://localhost:8001';
+  const voice = config.voice || 'zh-CN-XiaoxiaoNeural';
+  const speed = config.speed ?? provider.speedRange?.default ?? 1.0;
+
+  // Generate audio ID
+  const audioId = `edge-${Date.now()}`;
+
+  // Call local Edge TTS API
+  const response = await fetch(`${baseUrl}/tts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text,
+      audioId,
+      ttsProviderId: 'edge-tts',
+      ttsVoice: voice,
+      ttsSpeed: speed,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Edge TTS API error: ${response.status} ${response.statusText} - ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.success || !data.data?.base64) {
+    throw new Error(`Edge TTS API error: No audio data in response`);
+  }
+
+  // Decode base64 to Uint8Array
+  const base64 = data.data.base64;
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  return {
+    audio: bytes,
+    format: data.data.format || 'mp3',
   };
 }
 

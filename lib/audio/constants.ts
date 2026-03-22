@@ -606,6 +606,62 @@ export const TTS_PROVIDERS: Record<TTSProviderId, TTSProviderConfig> = {
     supportedFormats: ['mp3', 'wav', 'pcm'],
   },
 
+  'edge-tts': {
+    id: 'edge-tts',
+    name: 'Edge TTS (本地)',
+    requiresApiKey: false,
+    defaultBaseUrl: 'http://localhost:8001',
+    icon: '/logos/edge.svg',
+    voices: [
+      // 中文语音
+      {
+        id: 'zh-CN-XiaoxiaoNeural',
+        name: '晓晓 (女)',
+        language: 'zh-CN',
+        gender: 'female',
+        description: 'edgeVoiceXiaoxiao',
+      },
+      {
+        id: 'zh-CN-YunxiNeural',
+        name: '云希 (男)',
+        language: 'zh-CN',
+        gender: 'male',
+        description: 'edgeVoiceYunxi',
+      },
+      {
+        id: 'zh-CN-YunyangNeural',
+        name: '云扬 (男)',
+        language: 'zh-CN',
+        gender: 'male',
+        description: 'edgeVoiceYunyang',
+      },
+      {
+        id: 'zh-CN-XiaoyiNeural',
+        name: '晓伊 (女)',
+        language: 'zh-CN',
+        gender: 'female',
+        description: 'edgeVoiceXiaoyi',
+      },
+      // 英文语音
+      {
+        id: 'en-US-JennyNeural',
+        name: 'Jenny',
+        language: 'en-US',
+        gender: 'female',
+        description: 'edgeVoiceJenny',
+      },
+      {
+        id: 'en-US-GuyNeural',
+        name: 'Guy',
+        language: 'en-US',
+        gender: 'male',
+        description: 'edgeVoiceGuy',
+      },
+    ],
+    supportedFormats: ['mp3'],
+    speedRange: { min: 0.5, max: 2.0, default: 1.0 },
+  },
+
   'browser-native-tts': {
     id: 'browser-native-tts',
     name: '浏览器原生 (Web Speech API)',
@@ -833,6 +889,7 @@ export const DEFAULT_TTS_VOICES: Record<TTSProviderId, string> = {
   'azure-tts': 'zh-CN-XiaoxiaoNeural',
   'glm-tts': 'tongtong',
   'qwen-tts': 'Cherry',
+  'edge-tts': 'zh-CN-XiaoxiaoNeural',
   'browser-native-tts': 'default',
 };
 
