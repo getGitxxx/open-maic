@@ -46,6 +46,7 @@ import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
 import { SpeechButton } from '@/components/audio/speech-button';
+import { UserButton } from '@/components/auth/user-button';
 
 const log = createLogger('Home');
 
@@ -434,6 +435,11 @@ function HomePage() {
             </div>
           )}
         </div>
+
+        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
+
+        {/* User Button */}
+        <UserButton />
 
         <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
 
