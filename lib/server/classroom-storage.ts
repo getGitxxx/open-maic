@@ -7,7 +7,7 @@ export const CLASSROOMS_DIR = path.join(process.cwd(), 'data', 'classrooms');
 export const CLASSROOM_JOBS_DIR = path.join(process.cwd(), 'data', 'classroom-jobs');
 
 async function ensureDir(dir: string) {
-  await fs.mkdir(dir, { recursive: true });
+  await ensureDir(dir);
 }
 
 export async function ensureClassroomsDir() {
@@ -39,6 +39,8 @@ export interface PersistedClassroomData {
   stage: Stage;
   scenes: Scene[];
   createdAt: string;
+  userId?: string;
+  title?: string;
 }
 
 export function isValidClassroomId(id: string): boolean {
@@ -63,6 +65,8 @@ export async function persistClassroom(
     id: string;
     stage: Stage;
     scenes: Scene[];
+    userId?: string;
+    title?: string;
   },
   baseUrl: string,
 ): Promise<PersistedClassroomData & { url: string }> {
@@ -71,8 +75,11 @@ export async function persistClassroom(
     stage: data.stage,
     scenes: data.scenes,
     createdAt: new Date().toISOString(),
+    userId: data.userId,
+    title: data.title,
   };
 
+  // 保存到文件
   await ensureClassroomsDir();
   const filePath = path.join(CLASSROOMS_DIR, `${data.id}.json`);
   await writeJsonFileAtomic(filePath, classroomData);

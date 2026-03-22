@@ -1,5 +1,6 @@
 import { after, type NextRequest } from 'next/server';
 import { nanoid } from 'nanoid';
+import { getServerSession } from 'next-auth';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { type GenerateClassroomInput } from '@/lib/server/classroom-generation';
 import { runClassroomGenerationJob } from '@/lib/server/classroom-job-runner';
@@ -10,6 +11,9 @@ export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
+    // 获取用户 session
+    const session = await getServerSession();
+
     const rawBody = (await req.json()) as Partial<GenerateClassroomInput>;
     const body: GenerateClassroomInput = {
       requirement: rawBody.requirement || '',
@@ -33,7 +37,12 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = buildRequestOrigin(req);
     const jobId = nanoid(10);
-    const job = await createClassroomGenerationJob(jobId, body);
+
+    // 添加用户 ID 到 job 数据
+    const job = await createClassroomGenerationJob(jobId, {
+      ...body,
+      userId: session?.user?.id,
+    });
     const pollUrl = `${baseUrl}/api/generate-classroom/${jobId}`;
 
     after(() => runClassroomGenerationJob(jobId, body, baseUrl));

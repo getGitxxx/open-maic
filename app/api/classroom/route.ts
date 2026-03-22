@@ -1,5 +1,6 @@
 import { type NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
+import { getServerSession } from 'next-auth';
 import { apiSuccess, apiError, API_ERROR_CODES } from '@/lib/server/api-response';
 import {
   buildRequestOrigin,
@@ -10,6 +11,9 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
+    // 获取用户 session
+    const session = await getServerSession();
+
     const body = await request.json();
     const { stage, scenes } = body;
 
@@ -24,7 +28,15 @@ export async function POST(request: NextRequest) {
     const id = stage.id || randomUUID();
     const baseUrl = buildRequestOrigin(request);
 
-    const persisted = await persistClassroom({ id, stage: { ...stage, id }, scenes }, baseUrl);
+    const persisted = await persistClassroom(
+      {
+        id,
+        stage: { ...stage, id },
+        scenes,
+        userId: session?.user?.id,
+      },
+      baseUrl,
+    );
 
     return apiSuccess({ id: persisted.id, url: persisted.url }, 201);
   } catch (error) {
@@ -39,6 +51,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // 获取用户 session
+    const session = await getServerSession();
+
     const id = request.nextUrl.searchParams.get('id');
 
     if (!id) {
@@ -56,6 +71,11 @@ export async function GET(request: NextRequest) {
     const classroom = await readClassroom(id);
     if (!classroom) {
       return apiError(API_ERROR_CODES.INVALID_REQUEST, 404, 'Classroom not found');
+    }
+
+    // 权限验证：如果课堂有所有者，验证用户是否有权限访问
+    if (classroom.userId && classroom.userId !== session?.user?.id) {
+      return apiError(API_ERROR_CODES.UNAUTHORIZED, 403, 'You do not have permission to access this classroom');
     }
 
     return apiSuccess({ classroom });

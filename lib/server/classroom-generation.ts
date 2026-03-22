@@ -40,6 +40,7 @@ export interface GenerateClassroomInput {
   enableVideoGeneration?: boolean;
   enableTTS?: boolean;
   agentMode?: 'default' | 'generate';
+  userId?: string;
 }
 
 export type ClassroomGenerationStep =
@@ -412,6 +413,8 @@ export async function generateClassroom(
       id: stageId,
       stage,
       scenes,
+      userId: input.userId,
+      title: requirement.slice(0, 100),
     },
     options.baseUrl,
   );
