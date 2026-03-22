@@ -111,7 +111,7 @@ export async function generateActivationToken(userId: string): Promise<string> {
 }
 
 // 验证邮箱激活令牌
-export async function verifyActivationToken(token: string) {
+export async function verifyActivationToken(token: string): Promise<ActivationResult> {
   const activationToken = await prisma.emailActivationToken.findUnique({
     where: { token },
     include: { user: true },
