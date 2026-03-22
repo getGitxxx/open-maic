@@ -182,6 +182,18 @@ function HomePage() {
   const confirmDelete = async (id: string) => {
     setPendingDeleteId(null);
     try {
+      // 先删除数据库记录
+      const response = await fetch(`/api/classroom?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        log.error('Failed to delete classroom from database:', error);
+        // 即使数据库删除失败，也继续删除本地数据
+      }
+      
+      // 删除本地数据
       await deleteStageData(id);
       await loadClassrooms();
     } catch (err) {

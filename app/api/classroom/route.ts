@@ -7,6 +7,7 @@ import {
   isValidClassroomId,
   persistClassroom,
   readClassroom,
+  deleteClassroom,
 } from '@/lib/server/classroom-storage';
 
 export async function POST(request: NextRequest) {
@@ -84,6 +85,51 @@ export async function GET(request: NextRequest) {
       API_ERROR_CODES.INTERNAL_ERROR,
       500,
       'Failed to retrieve classroom',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // 获取用户 session
+    const session = await getAuthSession();
+
+    const id = request.nextUrl.searchParams.get('id');
+
+    if (!id) {
+      return apiError(
+        API_ERROR_CODES.MISSING_REQUIRED_FIELD,
+        400,
+        'Missing required parameter: id',
+      );
+    }
+
+    if (!isValidClassroomId(id)) {
+      return apiError(API_ERROR_CODES.INVALID_REQUEST, 400, 'Invalid classroom id');
+    }
+
+    // 先读取课堂验证权限
+    const classroom = await readClassroom(id);
+    if (!classroom) {
+      // 课堂不存在，返回成功（幂等删除）
+      return apiSuccess({ deleted: true });
+    }
+
+    // 权限验证：如果课堂有所有者，验证用户是否有权限删除
+    if (classroom.userId && classroom.userId !== session?.user?.id) {
+      return apiError(API_ERROR_CODES.UNAUTHORIZED, 403, 'You do not have permission to delete this classroom');
+    }
+
+    // 删除课堂
+    const deleted = await deleteClassroom(id);
+
+    return apiSuccess({ deleted });
+  } catch (error) {
+    return apiError(
+      API_ERROR_CODES.INTERNAL_ERROR,
+      500,
+      'Failed to delete classroom',
       error instanceof Error ? error.message : String(error),
     );
   }
