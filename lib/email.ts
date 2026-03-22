@@ -1,10 +1,21 @@
 import { Resend } from "resend"
 
-// 初始化 Resend 客户端
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 // 发件人地址
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@openmaic.chat"
+
+// 延迟初始化 Resend 客户端（避免构建时报错）
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY environment variable is not set")
+    }
+    resendClient = new Resend(apiKey)
+  }
+  return resendClient
+}
 
 // 邮件发送结果
 interface SendEmailResult {
@@ -25,7 +36,7 @@ export async function sendActivationEmail(
   const activationUrl = `${baseUrl}/api/auth/activate?token=${token}`
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "激活您的 OpenMAIC 账号",
@@ -100,7 +111,7 @@ export async function sendPasswordResetEmail(
   const resetUrl = `${baseUrl}/reset-password?token=${token}`
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "重置您的 OpenMAIC 密码",
@@ -171,7 +182,7 @@ export async function sendWelcomeEmail(
   userName?: string
 ): Promise<SendEmailResult> {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "欢迎加入 OpenMAIC！",
