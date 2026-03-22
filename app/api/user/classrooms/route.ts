@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getAuthSession } from "@/lib/auth"
 import { getUserClassrooms } from "@/lib/server/classroom-storage"
 
 export async function GET() {
   try {
     // 验证登录状态
-    const session = await getServerSession()
+    const session = await getAuthSession()
 
     if (!session?.user?.id) {
       return NextResponse.json(

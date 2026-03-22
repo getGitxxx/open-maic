@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getServerSession } from 'next-auth';
+import { getAuthSession } from '@/lib/auth';
 import { apiSuccess, apiError, API_ERROR_CODES } from '@/lib/server/api-response';
 import {
   buildRequestOrigin,
@@ -12,7 +12,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     // 获取用户 session
-    const session = await getServerSession();
+    const session = await getAuthSession();
 
     const body = await request.json();
     const { stage, scenes } = body;
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // 获取用户 session
-    const session = await getServerSession();
+    const session = await getAuthSession();
 
     const id = request.nextUrl.searchParams.get('id');
 

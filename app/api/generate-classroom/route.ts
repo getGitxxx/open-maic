@@ -1,6 +1,6 @@
 import { after, type NextRequest } from 'next/server';
 import { nanoid } from 'nanoid';
-import { getServerSession } from 'next-auth';
+import { getAuthSession } from '@/lib/auth';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { type GenerateClassroomInput } from '@/lib/server/classroom-generation';
 import { runClassroomGenerationJob } from '@/lib/server/classroom-job-runner';
@@ -12,7 +12,7 @@ export const maxDuration = 30;
 export async function POST(req: NextRequest) {
   try {
     // 获取用户 session
-    const session = await getServerSession();
+    const session = await getAuthSession();
 
     const rawBody = (await req.json()) as Partial<GenerateClassroomInput>;
     const body: GenerateClassroomInput = {
