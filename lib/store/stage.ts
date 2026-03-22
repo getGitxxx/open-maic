@@ -255,6 +255,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
     }
 
     try {
+      // 1. 保存到 IndexedDB（本地存储）
       const { saveStageData } = await import('@/lib/utils/stage-storage');
       await saveStageData(stage.id, {
         stage,
@@ -262,6 +263,27 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
         currentSceneId,
         chats,
       });
+
+      // 2. 同步保存到后端数据库（跨设备同步）
+      try {
+        const response = await fetch('/api/classroom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stage,
+            scenes,
+          }),
+        });
+
+        if (!response.ok) {
+          log.warn('Failed to sync to server:', response.status);
+        } else {
+          log.info('Synced to server:', stage.id);
+        }
+      } catch (syncError) {
+        // 不阻塞主流程，只是记录警告
+        log.warn('Failed to sync to server:', syncError);
+      }
     } catch (error) {
       log.error('Failed to save to storage:', error);
     }
