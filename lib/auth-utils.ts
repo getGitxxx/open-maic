@@ -79,6 +79,12 @@ export async function deletePasswordResetToken(tokenId: string) {
 // 邮箱激活令牌
 // ============================================
 
+// 类型定义
+type ActivationResult =
+  | { valid: true; user: { id: string; email: string; name: string | null; emailVerified: Date | null }; tokenId: string }
+  | { valid: false; error: string }
+
+
 // 生成邮箱激活令牌
 export async function generateActivationToken(userId: string): Promise<string> {
   // 删除该用户之前的激活令牌
