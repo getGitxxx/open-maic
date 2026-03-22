@@ -60,6 +60,8 @@ export function Stage({
   const setChatAreaWidth = useSettingsStore((s) => s.setChatAreaWidth);
   const chatAreaCollapsed = useSettingsStore((s) => s.chatAreaCollapsed);
   const setChatAreaCollapsed = useSettingsStore((s) => s.setChatAreaCollapsed);
+  const roundtableCollapsed = useSettingsStore((s) => s.roundtableCollapsed);
+  const setRoundtableCollapsed = useSettingsStore((s) => s.setRoundtableCollapsed);
 
   // PlaybackEngine state
   const [engineMode, setEngineMode] = useState<EngineMode>('idle');
@@ -675,7 +677,8 @@ export function Stage({
   const sceneViewerHeight = (() => {
     const headerHeight = 80; // Header h-20 = 80px
     if (mode === 'playback') {
-      return `calc(100% - ${headerHeight + 192}px)`; // Header + Roundtable
+      const roundtableHeight = roundtableCollapsed ? 32 : 192; // 32px when collapsed, 192px when expanded
+      return `calc(100% - ${headerHeight + roundtableHeight}px)`;
     }
     return `calc(100% - ${headerHeight}px)`;
   })();
@@ -848,6 +851,8 @@ export function Stage({
             onPrevSlide={handlePreviousScene}
             onNextSlide={handleNextScene}
             onWhiteboardClose={handleWhiteboardToggle}
+            roundtableCollapsed={roundtableCollapsed}
+            onToggleRoundtable={() => setRoundtableCollapsed(!roundtableCollapsed)}
           />
         )}
       </div>

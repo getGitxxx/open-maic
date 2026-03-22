@@ -149,6 +149,7 @@ export interface SettingsState {
   sidebarCollapsed: boolean;
   chatAreaCollapsed: boolean;
   chatAreaWidth: number;
+  roundtableCollapsed: boolean;
 
   // Actions
   setModel: (providerId: ProviderId, modelId: string) => void;
@@ -168,6 +169,7 @@ export interface SettingsState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setChatAreaCollapsed: (collapsed: boolean) => void;
   setChatAreaWidth: (width: number) => void;
+  setRoundtableCollapsed: (collapsed: boolean) => void;
 
   // Audio actions
   setTTSProvider: (providerId: TTSProviderId) => void;
@@ -495,6 +497,7 @@ export const useSettingsStore = create<SettingsState>()(
         // Layout preferences
         sidebarCollapsed: true,
         chatAreaCollapsed: true,
+        roundtableCollapsed: false,
         chatAreaWidth: 320,
 
         // Audio settings (use defaults)
@@ -557,6 +560,7 @@ export const useSettingsStore = create<SettingsState>()(
         // Layout actions
         setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
         setChatAreaCollapsed: (collapsed) => set({ chatAreaCollapsed: collapsed }),
+        setRoundtableCollapsed: (collapsed) => set({ roundtableCollapsed: collapsed }),
         setChatAreaWidth: (width) => set({ chatAreaWidth: width }),
 
         // Audio actions

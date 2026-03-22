@@ -11,6 +11,8 @@ import {
   Play,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Repeat,
   BookOpen,
   Loader2,
@@ -77,6 +79,9 @@ interface RoundtableProps {
   readonly onPrevSlide?: () => void;
   readonly onNextSlide?: () => void;
   readonly onWhiteboardClose?: () => void;
+  // Roundtable collapse
+  readonly roundtableCollapsed?: boolean;
+  readonly onToggleRoundtable?: () => void;
 }
 
 const DEFAULT_TEACHER_AVATAR = '/avatars/teacher.png';
@@ -137,6 +142,8 @@ export function Roundtable({
   onPrevSlide,
   onNextSlide,
   onWhiteboardClose,
+  roundtableCollapsed = false,
+  onToggleRoundtable,
 }: RoundtableProps) {
   const { t } = useI18n();
   const ttsMuted = useSettingsStore((s) => s.ttsMuted);
@@ -428,7 +435,65 @@ export function Roundtable({
   }, [playbackSpeed, setPlaybackSpeed]);
 
   return (
-    <div className="h-[192px] w-full flex flex-col relative z-10 border-t border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md">
+    <div className={cn(
+      "w-full flex flex-col relative z-10 border-t border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md transition-all duration-300",
+      roundtableCollapsed ? "h-8" : "h-[192px]"
+    )}>
+      {/* Collapse/Expand toggle button */}
+      <button
+        onClick={onToggleRoundtable}
+        className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors z-20 shadow-sm"
+        title={roundtableCollapsed ? t('roundtable.expand') : t('roundtable.collapse')}
+      >
+        {roundtableCollapsed ? (
+          <ChevronUp className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+        )}
+      </button>
+
+      {/* Collapsed state - mini toolbar */}
+      {roundtableCollapsed && (
+        <div className="h-8 flex items-center justify-center px-3">
+          <CanvasToolbar
+            className="h-8"
+            currentSceneIndex={currentSceneIndex}
+            scenesCount={scenesCount}
+            engineState={
+              engineMode === 'playing' || engineMode === 'live'
+                ? 'playing'
+                : engineMode === 'paused'
+                  ? 'paused'
+                  : 'idle'
+            }
+            isLiveSession={isStreaming || isTopicPending || engineMode === 'live'}
+            whiteboardOpen={whiteboardOpen}
+            sidebarCollapsed={sidebarCollapsed}
+            chatCollapsed={chatCollapsed}
+            onToggleSidebar={onToggleSidebar}
+            onToggleChat={onToggleChat}
+            onPrevSlide={onPrevSlide ?? (() => {})}
+            onNextSlide={onNextSlide ?? (() => {})}
+            onPlayPause={onPlayPause ?? (() => {})}
+            onWhiteboardClose={onWhiteboardClose ?? (() => {})}
+            showStopDiscussion={showStopButton}
+            onStopDiscussion={onStopDiscussion}
+            ttsEnabled={ttsEnabled}
+            ttsMuted={ttsMuted}
+            ttsVolume={ttsVolume}
+            onToggleMute={() => ttsEnabled && setTTSMuted(!ttsMuted)}
+            onVolumeChange={(v) => setTTSVolume(v)}
+            autoPlayLecture={autoPlayLecture}
+            onToggleAutoPlay={() => setAutoPlayLecture(!autoPlayLecture)}
+            playbackSpeed={playbackSpeed}
+            onCycleSpeed={handleCycleSpeed}
+          />
+        </div>
+      )}
+
+      {/* Expanded state - full content */}
+      {!roundtableCollapsed && (
+        <>
       {/* ── Toolbar strip — merged from CanvasArea ── */}
       <CanvasToolbar
         className="shrink-0 h-8 px-3 border-b border-gray-100/40 dark:border-gray-700/30"
@@ -1473,6 +1538,8 @@ export function Roundtable({
         </div>
       </div>
       {/* close interaction row */}
+        </>
+      )}
     </div>
   );
 }

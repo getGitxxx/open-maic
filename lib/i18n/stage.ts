@@ -76,6 +76,8 @@ export const stageZhCN = {
     autoPlay: '自动播放',
     autoPlayOff: '关闭自动播放',
     speed: '倍速',
+    expand: '展开讨论区',
+    collapse: '折叠讨论区',
   },
   pbl: {
     legacyFormat: '此PBL场景使用旧格式，请重新生成课程',
@@ -226,6 +228,8 @@ export const stageEnUS = {
     autoPlay: 'Auto-play',
     autoPlayOff: 'Stop auto-play',
     speed: 'Speed',
+    expand: 'Expand discussion panel',
+    collapse: 'Collapse discussion panel',
   },
   pbl: {
     legacyFormat: 'This PBL scene uses a legacy format. Please regenerate the course.',
