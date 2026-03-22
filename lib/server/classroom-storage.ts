@@ -209,7 +209,7 @@ export async function persistClassroom(
 /**
  * 获取用户的所有课件
  */
-export async function getUserClassrooms(userId: string): Promise<{
+export async function getUserClassrooms(userId: string, limit?: number): Promise<{
   id: string;
   title: string;
   createdAt: string;
@@ -225,6 +225,7 @@ export async function getUserClassrooms(userId: string): Promise<{
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: limit,
     });
 
     return classrooms.map((c) => ({

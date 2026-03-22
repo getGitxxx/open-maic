@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { getUserClassrooms } from "@/lib/server/classroom-storage"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // 验证登录状态
     const session = await getAuthSession()
@@ -14,8 +14,11 @@ export async function GET() {
       )
     }
 
+    // 获取 limit 参数
+    const limit = parseInt(request.nextUrl.searchParams.get("limit") || "0") || undefined
+
     // 从数据库获取用户课堂列表
-    const classrooms = await getUserClassrooms(session.user.id)
+    const classrooms = await getUserClassrooms(session.user.id, limit)
 
     return NextResponse.json({
       success: true,

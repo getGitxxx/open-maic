@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowUp,
@@ -72,6 +73,7 @@ function HomePage() {
   const { t, locale, setLocale } = useI18n();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [form, setForm] = useState<FormState>(initialFormState);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<
@@ -151,8 +153,35 @@ function HomePage() {
 
   const loadClassrooms = async () => {
     try {
+      // 登录用户从数据库读取（限制 8 条）
+      if (session?.user?.id) {
+        const response = await fetch('/api/user/classrooms?limit=8');
+        const data = await response.json();
+        
+        if (response.ok && data.classrooms) {
+          const list = data.classrooms.map((c: { id: string; title: string; createdAt: string; scenesCount: number }) => ({
+            id: c.id,
+            name: c.title,
+            description: '',
+            sceneCount: c.scenesCount,
+            createdAt: new Date(c.createdAt),
+            updatedAt: new Date(c.createdAt),
+          }));
+          setClassrooms(list);
+          
+          // 加载缩略图
+          if (list.length > 0) {
+            const slides = await getFirstSlideByStages(list.map((c: { id: string }) => c.id));
+            setThumbnails(slides);
+          }
+          return;
+        }
+      }
+      
+      // 未登录用户从 IndexedDB 读取
       const list = await listStages();
       setClassrooms(list);
+      
       // Load first slide thumbnails
       if (list.length > 0) {
         const slides = await getFirstSlideByStages(list.map((c) => c.id));
@@ -172,7 +201,7 @@ function HomePage() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Store hydration on mount
     loadClassrooms();
-  }, []);
+  }, [session?.user?.id]);
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

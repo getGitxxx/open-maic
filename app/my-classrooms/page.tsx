@@ -4,7 +4,17 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Trash2 } from "lucide-react"
 import Link from "next/link"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Classroom {
   id: string
@@ -18,6 +28,8 @@ export default function MyClassroomsPage() {
   const router = useRouter()
   const [classrooms, setClassrooms] = useState<Classroom[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -53,6 +65,34 @@ export default function MyClassroomsPage() {
       hour: "2-digit",
       minute: "2-digit",
     })
+  }
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDeleteId(id)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteId) return
+    
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/classroom?id=${deleteId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setClassrooms((prev) => prev.filter((c) => c.id !== deleteId))
+      } else {
+        console.error('删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+    } finally {
+      setIsDeleting(false)
+      setDeleteId(null)
+    }
   }
 
   if (status === "loading" || isLoading) {
@@ -107,20 +147,29 @@ export default function MyClassroomsPage() {
                 <Link
                   key={classroom.id}
                   href={`/classroom/${classroom.id}`}
-                  className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-sm transition-all"
+                  className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-sm transition-all group"
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 dark:text-white truncate">
                         {classroom.title}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {classroom.scenesCount} 个场景 · {formatDate(classroom.createdAt)}
                       </p>
                     </div>
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleDelete(classroom.id, e)}
+                        className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
+                        title="删除课堂"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -128,6 +177,26 @@ export default function MyClassroomsPage() {
           )}
         </div>
       </div>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogTitle>确认删除</AlertDialogTitle>
+          <AlertDialogDescription>
+            确定要删除这个课堂吗？此操作不可撤销。
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? '删除中...' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
