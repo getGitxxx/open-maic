@@ -6,8 +6,8 @@ export default withAuth(
     const { nextUrl } = req
     const isLoggedIn = !!req.nextauth.token
 
-    // 已登录用户访问登录页，重定向到首页
-    if (isLoggedIn && nextUrl.pathname === "/login") {
+    // 已登录用户访问登录/注册页，重定向到首页
+    if (isLoggedIn && (nextUrl.pathname === "/login" || nextUrl.pathname === "/register")) {
       return NextResponse.redirect(new URL("/", nextUrl))
     }
 
@@ -19,16 +19,20 @@ export default withAuth(
         const { nextUrl } = req
 
         // 公开路由（不需要登录）
-        const publicRoutes = ["/", "/login", "/api/auth"]
-        const isPublicRoute = publicRoutes.some(route =>
-          nextUrl.pathname === route || nextUrl.pathname.startsWith("/api/auth")
-        )
+        const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password"]
+        const isPublicRoute = publicRoutes.some(route => nextUrl.pathname === route)
+          || nextUrl.pathname.startsWith("/api/auth")
 
         // 静态资源
         const isStaticRoute =
           nextUrl.pathname.startsWith("/_next") ||
           nextUrl.pathname.startsWith("/favicon") ||
           nextUrl.pathname.includes(".")
+
+        // 首页需要登录
+        if (nextUrl.pathname === "/") {
+          return !!token
+        }
 
         if (isStaticRoute || isPublicRoute) {
           return true

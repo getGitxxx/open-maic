@@ -2,6 +2,8 @@ import NextAuth from "next-auth"
 import GithubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { compare } from "bcryptjs"
+import { prisma } from "@/lib/db"
 
 const handler = NextAuth({
   providers: [
@@ -20,17 +22,32 @@ const handler = NextAuth({
         password: { label: "密码", type: "password" },
       },
       async authorize(credentials) {
-        // TODO: 添加真实的用户验证逻辑
-        // 这里暂时只做演示，实际需要连接数据库验证
-        if (credentials?.email && credentials?.password) {
-          // 演示：允许任意邮箱密码登录
-          return {
-            id: credentials.email as string,
-            email: credentials.email as string,
-            name: credentials.email as string,
-          }
+        if (!credentials?.email || !credentials?.password) {
+          return null
         }
-        return null
+
+        // 查找用户
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        })
+
+        if (!user || !user.passwordHash) {
+          return null
+        }
+
+        // 验证密码
+        const isPasswordValid = await compare(credentials.password, user.passwordHash)
+
+        if (!isPasswordValid) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        }
       },
     }),
   ],
@@ -42,15 +59,45 @@ const handler = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
+        token.email = user.email ?? undefined
+        token.name = user.name ?? undefined
+        token.picture = user.image ?? undefined
       }
+
+      // OAuth 登录时，检查用户是否存在，不存在则创建
+      if (account?.provider && account.provider !== "credentials" && user?.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        })
+
+        if (!existingUser) {
+          // 创建新用户（OAuth 用户没有密码）
+          const newUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || user.email.split("@")[0],
+              image: user.image,
+              emailVerified: new Date(),
+              passwordHash: "", // OAuth 用户没有密码
+            },
+          })
+          token.id = newUser.id
+        } else {
+          token.id = existingUser.id
+        }
+      }
+
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.email = token.email as string
+        session.user.name = token.name as string
+        session.user.image = token.picture as string | null
       }
       return session
     },
