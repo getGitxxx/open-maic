@@ -10,6 +10,8 @@ import {
   Download,
   FileDown,
   Package,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useTheme } from '@/lib/hooks/use-theme';
@@ -24,9 +26,11 @@ import { useExportPPTX } from '@/lib/export/use-export-pptx';
 
 interface HeaderProps {
   readonly currentSceneTitle: string;
+  readonly isFullscreen?: boolean;
+  readonly onToggleFullscreen?: () => void;
 }
 
-export function Header({ currentSceneTitle }: HeaderProps) {
+export function Header({ currentSceneTitle, isFullscreen, onToggleFullscreen }: HeaderProps) {
   const { t, locale, setLocale } = useI18n();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
@@ -209,6 +213,19 @@ export function Header({ currentSceneTitle }: HeaderProps) {
               </div>
             )}
           </div>
+
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
+
+          {/* Fullscreen Button */}
+          {onToggleFullscreen && (
+            <button
+              onClick={onToggleFullscreen}
+              className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
+              title={isFullscreen ? t('stage.exitFullscreen') : t('stage.enterFullscreen')}
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
+          )}
 
           <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
 

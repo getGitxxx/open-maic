@@ -6,6 +6,7 @@ import { PENDING_SCENE_ID } from '@/lib/store/stage';
 import { useCanvasStore } from '@/lib/store/canvas';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useI18n } from '@/lib/hooks/use-i18n';
+import { useFullscreen } from '@/lib/hooks/use-fullscreen';
 import { SceneSidebar } from './stage/scene-sidebar';
 import { Header } from './header';
 import { CanvasArea } from '@/components/canvas/canvas-area';
@@ -48,6 +49,9 @@ export function Stage({
   const failedOutlines = useStageStore.use.failedOutlines();
 
   const currentScene = getCurrentScene();
+
+  // Fullscreen mode
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   // Layout state from settings store (persisted via localStorage)
   const sidebarCollapsed = useSettingsStore((s) => s.sidebarCollapsed);
@@ -674,24 +678,32 @@ export function Stage({
 
   return (
     <div className="flex-1 flex overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Scene Sidebar */}
-      <SceneSidebar
-        collapsed={sidebarCollapsed}
-        onCollapseChange={setSidebarCollapsed}
-        onSceneSelect={gatedSceneSwitch}
-        onRetryOutline={onRetryOutline}
-      />
+      {/* Scene Sidebar - hidden in fullscreen mode */}
+      {!isFullscreen && (
+        <SceneSidebar
+          collapsed={sidebarCollapsed}
+          onCollapseChange={setSidebarCollapsed}
+          onSceneSelect={gatedSceneSwitch}
+          onRetryOutline={onRetryOutline}
+        />
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
-        {/* Header */}
-        <Header currentSceneTitle={currentScene?.title || ''} />
+        {/* Header - hidden in fullscreen mode */}
+        {!isFullscreen && (
+          <Header
+            currentSceneTitle={currentScene?.title || ''}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+          />
+        )}
 
         {/* Canvas Area */}
         <div
           className="overflow-hidden relative flex-1 min-h-0 isolate"
           style={{
-            height: sceneViewerHeight,
+            height: isFullscreen ? '100vh' : sceneViewerHeight,
           }}
           suppressHydrationWarning
         >
