@@ -1,5 +1,3 @@
-// Prisma Schema for OpenMAIC
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,18 +8,15 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-// 用户表
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
+  id            String                  @id @default(cuid())
+  email         String                  @unique
+  passwordHash  String                  @map("password_hash")
   name          String?
   image         String?
-  emailVerified DateTime? @map("email_verified")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  // 关联
+  emailVerified DateTime?               @map("email_verified")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
   classrooms         Classroom[]
   resetTokens        PasswordResetToken[]
   activationTokens   EmailActivationToken[]
@@ -29,40 +24,37 @@ model User {
   @@map("users")
 }
 
-// 密码重置令牌表
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_reset_tokens")
 }
 
-// 邮箱激活令牌表
 model EmailActivationToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("email_activation_tokens")
 }
 
-// 课堂表
 model Classroom {
   id          String   @id
   userId      String?  @map("user_id")
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   title       String?
   requirement String?  @map("requirement")
   status      String   @default("completed")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("classrooms")
