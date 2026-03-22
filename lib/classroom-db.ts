@@ -1,5 +1,4 @@
 import { prisma } from "./db"
-import type { User } from "@prisma/client"
 
 // 课堂创建参数
 interface CreateClassroomParams {
