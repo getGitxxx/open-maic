@@ -19,9 +19,15 @@ export default withAuth(
         const { nextUrl } = req
 
         // 公开路由（不需要登录）
-        const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password"]
-        const isPublicRoute = publicRoutes.some(route => nextUrl.pathname === route)
-          || nextUrl.pathname.startsWith("/api/auth")
+        const publicRoutes = [
+          "/login",
+          "/register",
+          "/forgot-password",
+          "/reset-password",
+        ]
+        const isPublicRoute =
+          publicRoutes.some((route) => nextUrl.pathname === route) ||
+          nextUrl.pathname.startsWith("/api/auth/")
 
         // 静态资源
         const isStaticRoute =
