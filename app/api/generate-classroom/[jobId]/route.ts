@@ -3,7 +3,7 @@ import { apiError, apiSuccess } from '@/lib/server/api-response';
 import {
   isValidClassroomJobId,
   readClassroomGenerationJob,
-} from '@/lib/server/classroom-job-store';
+} from '@/lib/server/classroom-job-store-db';
 import { buildRequestOrigin } from '@/lib/server/classroom-storage';
 
 export const dynamic = 'force-dynamic';
@@ -31,8 +31,6 @@ export async function GET(req: NextRequest, context: { params: Promise<{ jobId: 
       message: job.message,
       pollUrl,
       pollIntervalMs: 5000,
-      scenesGenerated: job.scenesGenerated,
-      totalScenes: job.totalScenes,
       result: job.result,
       error: job.error,
       done: job.status === 'succeeded' || job.status === 'failed',

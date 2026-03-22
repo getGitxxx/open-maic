@@ -96,3 +96,23 @@ model MediaFile {
   @@index([classroomId])
   @@map("media_files")
 }
+
+model ClassroomGenerationJob {
+  id              String   @id
+  status          String   @default("queued")
+  step            String   @default("queued")
+  progress        Int      @default(0)
+  message         String?
+  userId          String?  @map("user_id")
+  requirement     String?  @db.VarChar(500)
+  result          Json?
+  error           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("classroom_generation_jobs")
+}

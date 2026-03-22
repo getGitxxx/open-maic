@@ -1,17 +1,19 @@
-import { after, type NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server';
 import { nanoid } from 'nanoid';
 import { getAuthSession } from '@/lib/auth';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { type GenerateClassroomInput } from '@/lib/server/classroom-generation';
-import { runClassroomGenerationJob } from '@/lib/server/classroom-job-runner';
-import { createClassroomGenerationJob } from '@/lib/server/classroom-job-store';
+import { runClassroomGenerationJobSync } from '@/lib/server/classroom-job-runner';
+import {
+  createClassroomGenerationJob,
+  readClassroomGenerationJob,
+} from '@/lib/server/classroom-job-store-db';
 import { buildRequestOrigin } from '@/lib/server/classroom-storage';
 
-export const maxDuration = 30;
+export const maxDuration = 300; // 5 minutes for long-running tasks
 
 export async function POST(req: NextRequest) {
   try {
-    // 获取用户 session
     const session = await getAuthSession();
 
     const rawBody = (await req.json()) as Partial<GenerateClassroomInput>;
@@ -38,32 +40,59 @@ export async function POST(req: NextRequest) {
     const baseUrl = buildRequestOrigin(req);
     const jobId = nanoid(10);
 
-    // 添加用户 ID 到 job 数据
-    const job = await createClassroomGenerationJob(jobId, {
+    // 创建 job 记录
+    await createClassroomGenerationJob(jobId, {
       ...body,
       userId: session?.user?.id,
     });
-    const pollUrl = `${baseUrl}/api/generate-classroom/${jobId}`;
 
-    after(() => runClassroomGenerationJob(jobId, body, baseUrl));
+    // 同步执行课堂生成（等待完成）
+    const result = await runClassroomGenerationJobSync(jobId, body, baseUrl);
 
     return apiSuccess(
       {
         jobId,
-        status: job.status,
-        step: job.step,
-        message: job.message,
-        pollUrl,
-        pollIntervalMs: 5000,
+        status: 'succeeded',
+        result: {
+          id: result.id,
+          url: result.url,
+          scenesCount: result.scenesCount,
+        },
       },
-      202,
+      201,
     );
   } catch (error) {
+    console.error('Classroom generation error:', error);
     return apiError(
       'INTERNAL_ERROR',
       500,
-      'Failed to create classroom generation job',
+      'Failed to generate classroom',
       error instanceof Error ? error.message : 'Unknown error',
     );
   }
+}
+
+// 查询 job 状态
+export async function GET(req: NextRequest) {
+  const jobId = req.nextUrl.searchParams.get('jobId');
+
+  if (!jobId) {
+    return apiError('MISSING_REQUIRED_FIELD', 400, 'Missing required parameter: jobId');
+  }
+
+  const job = await readClassroomGenerationJob(jobId);
+
+  if (!job) {
+    return apiError('INVALID_REQUEST', 404, 'Job not found');
+  }
+
+  return apiSuccess({
+    jobId: job.id,
+    status: job.status,
+    step: job.step,
+    progress: job.progress,
+    message: job.message,
+    result: job.result,
+    error: job.error,
+  });
 }
