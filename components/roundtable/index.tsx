@@ -18,6 +18,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AudioIndicator } from './audio-indicator';
+import type { AudioIndicatorState } from './audio-indicator';
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar';
 import { useAudioRecorder } from '@/lib/hooks/use-audio-recorder';
 import { useI18n } from '@/lib/hooks/use-i18n';
@@ -49,6 +51,8 @@ interface RoundtableProps {
   readonly isStreaming?: boolean;
   readonly sessionType?: 'qa' | 'discussion';
   readonly speakingAgentId?: string | null;
+  readonly audioIndicatorState?: AudioIndicatorState;
+  readonly audioAgentId?: string | null;
   readonly speechProgress?: number | null; // StreamBuffer reveal progress (0–1) for auto-scroll
   readonly showEndFlash?: boolean;
   readonly endFlashSessionType?: 'qa' | 'discussion';
@@ -115,6 +119,8 @@ export function Roundtable({
   isStreaming,
   sessionType,
   speakingAgentId,
+  audioIndicatorState,
+  audioAgentId,
   speechProgress: _speechProgress,
   showEndFlash,
   endFlashSessionType = 'discussion',
@@ -521,7 +527,10 @@ export function Roundtable({
         ttsEnabled={ttsEnabled}
         ttsMuted={ttsMuted}
         ttsVolume={ttsVolume}
-        onToggleMute={() => ttsEnabled && setTTSMuted(!ttsMuted)}
+        onToggleMute={() => {
+          if (!ttsEnabled) return;
+          setTTSMuted(!ttsMuted);
+        }}
         onVolumeChange={(v) => setTTSVolume(v)}
         autoPlayLecture={autoPlayLecture}
         onToggleAutoPlay={() => setAutoPlayLecture(!autoPlayLecture)}
@@ -1085,6 +1094,29 @@ export function Roundtable({
                         })()}
 
                       <div ref={bubbleScrollRef} className="overflow-y-auto scrollbar-hide">
+                        {/* Agent name + audio indicator header */}
+                        {bubbleRole !== 'user' && bubbleName && (
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 truncate">
+                              {bubbleName}
+                            </span>
+                            <AudioIndicator
+                              state={
+                                speakingAgentId === audioAgentId
+                                  ? (audioIndicatorState ?? 'idle')
+                                  : 'idle'
+                              }
+                              agentColor={
+                                bubbleRole === 'agent'
+                                  ? (useAgentRegistry.getState().getAgent(speakingAgentId || '')
+                                      ?.color ?? undefined)
+                                  : (useAgentRegistry
+                                      .getState()
+                                      .getAgent(teacherParticipant?.id || '')?.color ?? undefined)
+                              }
+                            />
+                          </div>
+                        )}
                         {isBubbleLoading ? (
                           <div className="flex gap-1 items-center py-1">
                             <motion.div

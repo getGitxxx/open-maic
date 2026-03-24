@@ -838,15 +838,122 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     ],
   },
 
+  grok: {
+    id: 'grok',
+    name: 'Grok',
+    type: 'openai',
+    defaultBaseUrl: 'https://api.x.ai/v1',
+    requiresApiKey: true,
+    icon: '/logos/grok.svg',
+    models: [
+      {
+        id: 'grok-4.20-beta-0309-reasoning',
+        name: 'Grok 4.20 Reasoning',
+        contextWindow: 2000000,
+        outputWindow: 131072,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+          thinking: {
+            toggleable: false,
+            budgetAdjustable: false,
+            defaultEnabled: true,
+          },
+        },
+      },
+      {
+        id: 'grok-4.20-beta-0309-non-reasoning',
+        name: 'Grok 4.20',
+        contextWindow: 2000000,
+        outputWindow: 131072,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'grok-code-fast-1',
+        name: 'Grok Code Fast',
+        contextWindow: 256000,
+        outputWindow: 32768,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+      {
+        id: 'grok-4-fast-reasoning',
+        name: 'Grok 4 Fast Reasoning',
+        contextWindow: 2000000,
+        outputWindow: 131072,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+          thinking: {
+            toggleable: false,
+            budgetAdjustable: false,
+            defaultEnabled: true,
+          },
+        },
+      },
+      {
+        id: 'grok-4-fast-non-reasoning',
+        name: 'Grok 4 Fast',
+        contextWindow: 2000000,
+        outputWindow: 131072,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'grok-4-1-fast-reasoning',
+        name: 'Grok 4.1 Fast Reasoning',
+        contextWindow: 2000000,
+        outputWindow: 131072,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+          thinking: {
+            toggleable: false,
+            budgetAdjustable: false,
+            defaultEnabled: true,
+          },
+        },
+      },
+      {
+        id: 'grok-4-1-fast-non-reasoning',
+        name: 'Grok 4.1 Fast',
+        contextWindow: 2000000,
+        outputWindow: 131072,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'grok-4-0709',
+        name: 'Grok 4',
+        contextWindow: 256000,
+        outputWindow: 32768,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'grok-3',
+        name: 'Grok 3',
+        contextWindow: 131072,
+        outputWindow: 32768,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+      {
+        id: 'grok-3-mini',
+        name: 'Grok 3 Mini',
+        contextWindow: 131072,
+        outputWindow: 32768,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
+    ],
+  },
+
   bailian: {
     id: 'bailian',
     name: '阿里云百炼',
     type: 'openai',
     defaultBaseUrl: 'https://coding.dashscope.aliyuncs.com/v1',
     requiresApiKey: true,
-    icon: '/logos/qwen.svg', // 使用 Qwen logo
+    icon: '/logos/qwen.svg',
     models: [
-      // Qwen Series - 视觉理解能力
       {
         id: 'qwen3.5-plus',
         name: 'Qwen3.5 Plus',
@@ -859,16 +966,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
         name: 'Qwen3 Max',
         contextWindow: 256000,
         outputWindow: 16384,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: false,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: false,
-            defaultEnabled: false,
-          },
-        },
+        capabilities: { streaming: true, tools: true, vision: false },
       },
       {
         id: 'qwen3-coder-next',
@@ -884,7 +982,6 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
         outputWindow: 8192,
         capabilities: { streaming: true, tools: true, vision: false },
       },
-      // GLM Series
       {
         id: 'glm-5',
         name: 'GLM-5',
@@ -899,19 +996,17 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
         outputWindow: 128000,
         capabilities: { streaming: true, tools: true, vision: false },
       },
-      // Kimi Series - 视觉理解能力
       {
         id: 'kimi-k2.5',
         name: 'Kimi K2.5',
-        contextWindow: 256000,
+        contextWindow: 128000,
         outputWindow: 8192,
         capabilities: { streaming: true, tools: true, vision: true },
       },
-      // MiniMax Series
       {
-        id: 'MiniMax-M2.5',
-        name: 'MiniMax M2.5',
-        contextWindow: 204800,
+        id: 'deepseek-r1',
+        name: 'DeepSeek R1',
+        contextWindow: 64000,
         outputWindow: 8192,
         capabilities: { streaming: true, tools: true, vision: false },
       },
