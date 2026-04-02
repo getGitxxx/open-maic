@@ -152,6 +152,9 @@ async function generateSingleMedia(
     const objectUrl = URL.createObjectURL(blob);
     const posterObjectUrl = posterBlob ? URL.createObjectURL(posterBlob) : undefined;
     useMediaGenerationStore.getState().markDone(req.elementId, objectUrl, posterObjectUrl);
+
+    // 上传到云端（后台执行，不阻塞主流程）
+    uploadMediaToCloudBackground(stageId, req.elementId, blob, req.type, posterBlob);
   } catch (err) {
     if (abortSignal?.aborted) return;
     const message = err instanceof Error ? err.message : String(err);
@@ -283,4 +286,67 @@ async function fetchAsBlob(url: string): Promise<Blob> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch blob: ${res.status}`);
   return res.blob();
+}
+
+/**
+ * 后台上传媒体文件到云端（不阻塞主流程）
+ */
+async function uploadMediaToCloudBackground(
+  stageId: string,
+  elementId: string,
+  blob: Blob,
+  type: 'image' | 'video',
+  posterBlob?: Blob,
+): Promise<void> {
+  try {
+    // 上传主文件
+    const formData = new FormData();
+    formData.append('classroomId', stageId);
+    formData.append('mediaId', elementId);
+    formData.append('type', type);
+    formData.append('file', blob);
+
+    const response = await fetch('/api/classroom-media/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      log.warn(`Failed to upload media ${elementId}:`, error.message || response.status);
+      return;
+    }
+
+    const data = await response.json();
+    log.info(`Uploaded media to cloud: ${elementId} -> ${data.data?.url}`);
+
+    // 更新 IndexedDB 中的 ossKey
+    await db.mediaFiles.update(mediaFileKey(stageId, elementId), {
+      ossKey: data.data?.url,
+    });
+
+    // 如果是视频，还要上传 poster
+    if (type === 'video' && posterBlob) {
+      const posterFormData = new FormData();
+      posterFormData.append('classroomId', stageId);
+      posterFormData.append('mediaId', `${elementId}_poster`);
+      posterFormData.append('type', 'image');
+      posterFormData.append('file', posterBlob);
+
+      const posterResponse = await fetch('/api/classroom-media/upload', {
+        method: 'POST',
+        body: posterFormData,
+      });
+
+      if (posterResponse.ok) {
+        const posterData = await posterResponse.json();
+        await db.mediaFiles.update(mediaFileKey(stageId, elementId), {
+          posterOssKey: posterData.data?.url,
+        });
+        log.info(`Uploaded video poster to cloud: ${elementId}_poster`);
+      }
+    }
+  } catch (error) {
+    log.warn(`Background media upload failed for ${elementId}:`, error);
+  }
 }
