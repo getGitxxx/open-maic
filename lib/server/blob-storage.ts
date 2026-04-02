@@ -143,6 +143,24 @@ export async function migrateMediaToBlob(
 }
 
 /**
+ * 上传媒体 Blob（通用方法）
+ */
+export async function uploadMediaBlob(
+  classroomId: string,
+  mediaId: string,
+  blob: Blob,
+  type: 'image' | 'video' | 'audio'
+): Promise<BlobUploadResult> {
+  const ext = type === 'image' ? 'png' : type === 'video' ? 'mp4' : 'mp3';
+  const pathname = `classrooms/${classroomId}/${type}s/${mediaId}.${ext}`;
+  const buffer = Buffer.from(await blob.arrayBuffer());
+
+  return uploadToBlob(pathname, buffer, {
+    contentType: blob.type || `${type}/${ext}`,
+  });
+}
+
+/**
  * Blob 转 Base64
  */
 async function blobToBase64(blob: Blob): Promise<string> {

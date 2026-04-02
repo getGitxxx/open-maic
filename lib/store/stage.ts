@@ -279,6 +279,16 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
           log.warn('Failed to sync to server:', response.status);
         } else {
           log.info('Synced to server:', stage.id);
+
+          // 3. 同步媒体文件到云端（后台执行，不阻塞主流程）
+          const { syncMediaToCloud } = await import('@/lib/utils/media-sync');
+          syncMediaToCloud(stage.id).then((result) => {
+            if (result.uploaded > 0 || result.failed > 0) {
+              log.info(`Media sync: ${result.uploaded} uploaded, ${result.failed} failed`);
+            }
+          }).catch((err) => {
+            log.warn('Background media sync failed:', err);
+          });
         }
       } catch (syncError) {
         // 不阻塞主流程，只是记录警告
@@ -300,7 +310,7 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
       }
 
       const { loadStageData } = await import('@/lib/utils/stage-storage');
-      const data = await loadStageData(stageId);
+      let data = await loadStageData(stageId);
 
       // Load outlines for resume-on-refresh
       const { db } = await import('@/lib/utils/database');
@@ -318,6 +328,16 @@ const useStageStoreBase = create<StageState>()((set, get) => ({
           generatingOutlines: outlines.filter((o) => !data.scenes.some((s) => s.order === o.order)),
         });
         log.info('Loaded from storage:', stageId);
+
+        // 后台同步媒体文件到本地（如果有云端数据）
+        const { syncMediaFromCloud } = await import('@/lib/utils/media-sync');
+        syncMediaFromCloud(stageId).then((result) => {
+          if (result.uploaded > 0 || result.failed > 0) {
+            log.info(`Media sync from cloud: ${result.uploaded} downloaded, ${result.failed} failed`);
+          }
+        }).catch((err) => {
+          log.warn('Background media sync from cloud failed:', err);
+        });
       } else {
         log.warn('No data found for stage:', stageId);
       }
