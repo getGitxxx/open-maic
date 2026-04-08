@@ -16,6 +16,45 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('SceneGenerator');
 
+/**
+ * 后台上传音频文件到云端（不阻塞主流程）
+ */
+async function uploadAudioToCloudBackground(
+  stageId: string,
+  audioId: string,
+  blob: Blob,
+  format: string,
+): Promise<void> {
+  try {
+    const formData = new FormData();
+    formData.append('classroomId', stageId);
+    formData.append('mediaId', audioId);
+    formData.append('type', 'audio');
+    formData.append('file', blob);
+
+    const response = await fetch('/api/classroom-media/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      log.warn(`Failed to upload audio ${audioId}:`, error.message || response.status);
+      return;
+    }
+
+    const data = await response.json();
+    log.info(`Uploaded audio to cloud: ${audioId} -> ${data.data?.url}`);
+
+    // 更新 IndexedDB 中的 ossKey
+    await db.audioFiles.update(audioId, {
+      ossKey: data.data?.url,
+    });
+  } catch (error) {
+    log.warn(`Background audio upload failed for ${audioId}:`, error);
+  }
+}
+
 interface SceneContentResult {
   success: boolean;
   content?: unknown;
@@ -124,6 +163,7 @@ async function fetchSceneActions(
 export async function generateAndStoreTTS(
   audioId: string,
   text: string,
+  stageId: string,
   signal?: AbortSignal,
 ): Promise<void> {
   const settings = useSettingsStore.getState();
@@ -169,11 +209,17 @@ export async function generateAndStoreTTS(
     format: data.format,
     createdAt: Date.now(),
   });
+
+  // 后台上传到云端（不阻塞主流程）
+  uploadAudioToCloudBackground(stageId, audioId, blob, data.format).catch((err) => {
+    log.warn('Background audio upload failed:', err);
+  });
 }
 
 /** Generate TTS for all speech actions in a scene. Returns result. */
 async function generateTTSForScene(
   scene: Scene,
+  stageId: string,
   signal?: AbortSignal,
 ): Promise<{ success: boolean; failedCount: number; error?: string }> {
   const providerId = useSettingsStore.getState().ttsProviderId;
@@ -190,7 +236,7 @@ async function generateTTSForScene(
     const audioId = `tts_${action.id}`;
     action.audioId = audioId;
     try {
-      await generateAndStoreTTS(audioId, action.text, signal);
+      await generateAndStoreTTS(audioId, action.text, stageId, signal);
     } catch (error) {
       failedCount++;
       lastError = error instanceof Error ? error.message : `TTS failed for action ${action.id}`;
@@ -364,7 +410,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
 
             // TTS generation — failure means the whole scene fails
             if (settings.ttsEnabled && settings.ttsProviderId !== 'browser-native-tts') {
-              const ttsResult = await generateTTSForScene(scene, signal);
+              const ttsResult = await generateTTSForScene(scene, stage.id, signal);
               if (!ttsResult.success) {
                 if (abortRef.current || store.getState().generationEpoch !== startEpoch) {
                   pausedByFailureOrAbort = true;
@@ -509,7 +555,7 @@ export function useSceneGenerator(options: UseSceneGeneratorOptions = {}) {
         // Step 3: TTS
         const settings = useSettingsStore.getState();
         if (settings.ttsEnabled && settings.ttsProviderId !== 'browser-native-tts') {
-          const ttsResult = await generateTTSForScene(actionsResult.scene, signal);
+          const ttsResult = await generateTTSForScene(actionsResult.scene, state.stage.id, signal);
           if (!ttsResult.success) {
             store.getState().addFailedOutline(outline);
             return;
